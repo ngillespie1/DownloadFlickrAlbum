@@ -1,29 +1,21 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Mon May 25 08:28:59 2020
-
-Use: python DownloadFlickrAlbum(s) <FlickrUserID> <public>
-"""
-
-
-
 #!/usr/bin/env python
 
 import urllib
 import sys
 import os
 import flickrapi
-import xml.etree.ElementTree as ET
 import urllib.request
+import time
 
 
-api_key = u'INSERT HERE'
-api_secret = u'INSERT HERE'
+api_key = u'APIKEY'
+api_secret = u'APISECRET'
 
 nArguments = 3
 usageString = "usage: python flickr_download.py <user_id> <access_type>"
 download_folder = "flickr_downloads"
+AlbumId = '72157677674388058'
+
 
 if len(sys.argv)!= nArguments:
 	print(' ' + usageString)	
@@ -44,54 +36,46 @@ setsXML = flickr.photosets.getList(user_id=user_id)
 
 if setsXML.attrib['stat'] == 'ok':
 	sets = setsXML.findall('.//photoset')
+	print(sets)
 
-	# for each album
-	for set in sets:
-		id = set.attrib['id']
-		print(set)
-		print(id)
-        # Insert Flickr Albums Here
-		if id == "72157677674388058" or id == "72157705727616844" or id == '72157702039127642':
-			
-			print("             |")
-			print("Downloading \|/ ")
-		#print set.find('title').text
-			print
-
-		
-			if not os.path.exists(download_folder + "/" + id):
-				os.makedirs(download_folder + "/" + id)
-		
-#		# store the metadata of the album in a file
-#		metadata_file = open(download_folder + "/" + id + "/" + id + '.xml','w')
-#		metadata_file.write(ET.tostring(set, encoding='utf8', method='xml'))
-#		metadata_file.close()
-
-		# getting the files in the album
-			photosXML = flickr.photosets.getPhotos(photoset_id=id)
-			photos = photosXML.findall('.//photo')
-
-		# for each file in the album
-			for photo in photos:
-				photo_id = photo.attrib['id']
-			
-				sizesXML = flickr.photos.getSizes(photo_id=photo_id)
-				original_size = sizesXML.find('.//size[@label="Original"]')
-
-				photo_url = original_size.attrib['source']
-
-				photo_name = photo_url.split('/')[-1]
-				print ("		" + photo_name)
-			
-			# store the metadata of the file
-#			metadata_file = open(download_folder + "/" + id + "/" + photo_name.split('.')[-2] + '.xml','w')
-#			metadata_file.write(ET.tostring(photo, encoding='utf8', method='xml'))
-#			metadata_file.close()
-
-			# downloading the file
-		#if id == "72157677674388058":
-				urllib.request.urlretrieve(photo_url, download_folder + "/" + id + "/" + photo_name)
-		else:
-			print('trying next set')
+	count=1
+	try:
+		# for each album
+		for set in sets:
+			id = set.attrib['id']
+			if id == '72157705262286295': #or id == '72157705727616844' or id == '72157702039127642' or id == '72157703869229761' or id == '72157705344537314' or id == '72157705766546614':
+				
+				print("             |")
+				print("Downloading \|/ ")
+									
+				photocount=0
+				pagecounter=5
+				#Divide number of photos by 500 and Round Up to next 1.
+					
+				# getting the files in the album             
+				while count < pagecounter:
+					print(str(count))
+					print('Doing Set Number:' + str(count))
+					photosXML = flickr.photosets.getPhotos(photoset_id=id, page=count)
+					photos = photosXML.findall('.//photo')
+					for photo in photos:
+						photo_id = photo.attrib['id']
+						sizesXML = flickr.photos.getSizes(photo_id=photo_id)
+						original_size = sizesXML.find('.//size[@label="Original"]')
+						photo_url = original_size.attrib['source']
+						photo_name = photo_url.split('/')[-1]
+						print ("		" + str(photocount)+ ' - ' + photo_name)	
+						if not os.path.exists(download_folder + "/" + id):
+							os.makedirs(download_folder + "/" + id)
+						urllib.request.urlretrieve(photo_url, download_folder + "/" + id + "/" + photo_name)
+						photocount+=1
+					count+=1	
+					print('Moving on to the Next Set ' + str(count))
+					print('')
+					
+			else:
+				print('trying next set')
+	except:
+		time.sleep(2)
 else:
 	print("Flickr error")
